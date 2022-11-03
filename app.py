@@ -23,11 +23,18 @@ def run_with_retry(func, attempts=10):
     return success
 
 
-def classify_urls(main_url, url):
-    resource_urls = []
+resource_urls = []
+result = {}
+recursing_counter = 0
+
+
+def get_all_resources(main_url, url):
+    global recursing_counter
+    recursing_counter += 1
+    print('################# 第 {} 次循环 #################'.format(recursing_counter))
+
     page_urls = []
-    result = {}
-    
+
     try:
         network_info = utils.get_network_log(url)
     except Exception as e:
@@ -50,46 +57,38 @@ def classify_urls(main_url, url):
     valid_url = utils.filter_by_same_domain(raw_links, main_url)
 
     for item in valid_url:
-        if '.html' in item:
+        if '.html' in item and item != url:
             page_urls.append(item)
         else:
             resource_urls.append(item)
-    
-    result['pages'] = list(set(page_urls))
-    result['resources'] = list(set(resource_urls))
-    print(json.dumps(result, indent=2))
 
-    return result
+    if page_urls:
+        for page in page_urls:
+            return get_all_resources(main_url, page)
+    else:
+        # result['pages'] = page_urls
+        result['resources'] = resource_urls
+        print(json.dumps(result, indent=2))
+        return result
 
 
 def main(main_url, save_path):
     failed_urls = []
+    url = main_url
 
-    url = 'https://web.stanford.edu/class/cs101/lecture01.html'
-    classified_urls = classify_urls(main_url, url)
+    classified_urls = get_all_resources(main_url, url)
 
-    for resource in classified_urls['resources']:
-        retrieve_status = run_with_retry(utils.download_from_url(resource,main_url, save_path))
-        if not retrieve_status:
-            failed_urls.append(resource)
-    if failed_urls:
-        print(failed_urls)
-        
+    if classified_urls and classified_urls['resources']:
+        for resource in classified_urls['resources']:
+            retrieve_status = run_with_retry(utils.download_from_url(resource,main_url, save_path))
+            if not retrieve_status:
+                failed_urls.append(resource)
+        if failed_urls:
+            print(failed_urls)
+    else:
+        print('No resource found on {}'.format(main_url))
+
 
 main_url = 'https://web.stanford.edu/class/cs101/'
 save_path = '/Users/andy13/learning/test'
 main(main_url, save_path)
-
-# try:
-#     data = utils.get_hyperlinks(url, save_as_json=True)
-# except Exception as e:
-#     print(e)
-#     print('Connection Error')
-
-# try:
-#     data = utils.get_network_log(url, save_as_json=True)
-# except Exception as e:
-#     print(e)
-#     print('Connection Error')
-
-# utils.download_from_url('https://web.stanford.edu/class/cs101/', '/Users/andy13/learning/test')

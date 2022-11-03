@@ -157,11 +157,11 @@ def download_from_url(url, main_url, path):
         filename = url.split('/')[-1]
 
     if '/' in url.replace(main_url, ''):
-        pre_path = path + '/' + url.replace(main_url, '')
+        pre_path = path + '/' + '/'.join(str(x) for x in url.replace(main_url, '').split('/')[:-1]) + '/'
         filepath = pre_path + filename
-        isExist = os.path.exists(pre_path )
+        isExist = os.path.exists(pre_path)
         if not isExist:
-            os.makedirs(pre_path )
+            os.makedirs(pre_path)
     else:
         filepath = path + '/' + filename
 
