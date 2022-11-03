@@ -8,6 +8,8 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from webdriver_manager.chrome import ChromeDriverManager
 import json
+import requests
+import os
 
 
 def url_to_filename(url, prefix):
@@ -18,6 +20,14 @@ def url_to_filename(url, prefix):
     else:
         filename = prefix + '_' + url.replace('.', '-').replace('/', '_')
     return filename
+
+
+def filter_by_same_domain(url_lists, domain_url):
+    links_of_same_domain = []
+    for link in url_lists:
+        if link and domain_url in link:
+            links_of_same_domain.append(link)
+    return links_of_same_domain
 
 
 def get_network_log(url, save_as_json=False, timeout=60):
@@ -138,3 +148,32 @@ def get_hyperlinks(url, save_as_json=False, timeout=60):
             print('{} json file saved'.format(filename))
     
     return href_lists
+
+
+def download_from_url(url, main_url, path):
+    if url[-1:] == '/' or '.' not in url.split('/')[-1]:
+        filename = 'index.html'
+    else:
+        filename = url.split('/')[-1]
+
+    if '/' in url.replace(main_url, ''):
+        pre_path = path + '/' + url.replace(main_url, '')
+        filepath = pre_path + filename
+        isExist = os.path.exists(pre_path )
+        if not isExist:
+            os.makedirs(pre_path )
+    else:
+        filepath = path + '/' + filename
+
+    try:
+        res = requests.get(url, stream=True)
+    except:
+        print('Connectiong Error Occured')
+
+    if res.status_code == 200:
+        with open(filepath, 'wb') as handler:
+            handler.write(res.content)
+            print('{} downloaded from {}'.format(filename, url))
+    
+    else:
+        print('{} couldn\'t be retrieved'.format(url))
