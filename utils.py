@@ -25,7 +25,7 @@ def url_to_filename(url, prefix):
 def filter_by_same_domain(url_lists, domain_url):
     links_of_same_domain = []
     for link in url_lists:
-        if link and domain_url in link:
+        if link and domain_url in link and '#' not in link:
             links_of_same_domain.append(link)
     return links_of_same_domain
 
@@ -167,13 +167,17 @@ def download_from_url(url, main_url, path):
 
     try:
         res = requests.get(url, stream=True)
-    except:
+        if res.status_code == 200:
+            with open(filepath, 'wb') as handler:
+                handler.write(res.content)
+                print('{} downloaded from {}'.format(filename, url))
+                return True
+        else:
+            print('{} couldn\'t be retrieved'.format(url))
+            return False
+    except Exception as e:
+        print(e)
         print('Connectiong Error Occured')
+        return False
 
-    if res.status_code == 200:
-        with open(filepath, 'wb') as handler:
-            handler.write(res.content)
-            print('{} downloaded from {}'.format(filename, url))
     
-    else:
-        print('{} couldn\'t be retrieved'.format(url))
